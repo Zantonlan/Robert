@@ -93,8 +93,8 @@ void drawEMF(HDC hdc, HWND hwnd, const char* key, int x, int y, float sx, float 
 		RECT rect = {
 			.left = x,
 			.top = y,
-			.right = (int)(width*sx),
-			.bottom = (int)(height*sy)
+			.right = (int)(width*sx)+x,
+			.bottom = (int)(height*sy)+y
 		};
 
 		PlayEnhMetaFile(hdc, emf, &rect);
@@ -121,6 +121,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 
 			drawEMF(hdc, hwnd, "background", 0, 0, 1, 1, true);
 
+			float deskWidthScale = 0.75*(screenWidth/2560);
+			float deskHeightScale = 1*(screenHeight/1440);
+			drawEMF(hdc, hwnd, "desk", screenWidth-(1026*deskWidthScale), screenHeight-(770*deskHeightScale), deskWidthScale, deskHeightScale, false); //1368x770 original res, 1026x770 scaled (top half-ish empty)
+
 			int trapezoidpos[2] = {0, 0};
 			POINT trapezoid[4] = {
 				{trapezoidpos[1]+50, trapezoidpos[2]},
@@ -133,7 +137,16 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 
 			Rectangle(hdc, 0, 0, 10, 10);
 
+			HBRUSH brush = CreateSolidBrush(RGB(255, 253, 208));
+			HBRUSH oldBrush = SelectObject(hdc, brush);
+
+			RoundRect(hdc, 500, 250, 600, 350, 15, 15);
+
+			SelectObject(hdc, oldBrush);
+
 			SetBkMode(hdc, TRANSPARENT);
+			TextOut(hdc, 510, 260, "Test", strlen("Test"));
+			
 			TextOut(hdc, 10, 110, "Hey!", strlen("Hey!"));
 			EndPaint(hwnd, &ps);
 			return 0;
@@ -216,6 +229,12 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmdLine, int nCmdSh
 		return 0;
 	}
 	insertEMF("background", test);
+	HENHMETAFILE desk = GetEnhMetaFileA("./assets/desk.emf");
+	if (!desk) {
+		MessageBox(hwnd, "Couldn't load test ENF!", "Error", MB_ICONERROR);
+		return 0;
+	}
+	insertEMF("desk", desk);
 
 	ShowWindow(hwnd, nCmdShow);
 	UpdateWindow(hwnd);
