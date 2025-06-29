@@ -70,15 +70,25 @@ void freeEMFTable() {
 //int y: the y position
 //float sx: the x scale factor
 //float sy: the y scale factor
-void drawEMF(HDC hdc, HWND hwnd, const char* key, int x, int y, float sx, float sy) {
+void drawEMF(HDC hdc, HWND hwnd, const char* key, int x, int y, float sx, float sy, bool fullscreen) {
 	HENHMETAFILE emf = getEMF(key);
 	if (emf) {
 		ENHMETAHEADER header = {0};
 		header.iType = EMR_HEADER;
 		GetEnhMetaFileHeader(emf, sizeof(header), &header);
 		
-		int width = (header.rclFrame.right - header.rclFrame.left) * dpiX / 2540;
-		int height = (header.rclFrame.bottom - header.rclFrame.top) * dpiY / 2540;
+		int widthMM = header.rclFrame.right - header.rclFrame.left;
+		int heightMM = header.rclFrame.bottom - header.rclFrame.top;
+		int width = widthMM * dpiX / 2540;
+		int height = heightMM * dpiY / 2540;
+
+		if (fullscreen == true) {
+			sx = (float)screenWidth / width;
+			sy = (float)screenHeight / height;
+			float scale = max(sx, sy);
+			sx = scale;
+			sy = scale;
+		}
 
 		RECT rect = {
 			.left = x,
@@ -109,7 +119,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hwnd, &ps);
 
-			drawEMF(hdc, hwnd, "background", 0, 0, .5, .2);
+			drawEMF(hdc, hwnd, "background", 0, 0, 1, 1, true);
 
 			int trapezoidpos[2] = {0, 0};
 			POINT trapezoid[4] = {
