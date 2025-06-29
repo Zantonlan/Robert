@@ -70,7 +70,7 @@ void freeEMFTable() {
 //int y: the y position
 //float sx: the x scale factor
 //float sy: the y scale factor
-void drawEMF(HDC hdc, HWND hwnd, const char* key, int x, int y, float sx, float sy, bool fullscreen) {
+void drawEMF(HDC* hdc, HWND hwnd, const char* key, int x, int y, float sx, float sy, bool fullscreen) {
 	HENHMETAFILE emf = getEMF(key);
 	if (emf) {
 		ENHMETAHEADER header = {0};
@@ -97,7 +97,7 @@ void drawEMF(HDC hdc, HWND hwnd, const char* key, int x, int y, float sx, float 
 			.bottom = (int)(height*sy)+y
 		};
 
-		PlayEnhMetaFile(hdc, emf, &rect);
+		PlayEnhMetaFile(*hdc, emf, &rect);
 	}
 }
 
@@ -119,12 +119,13 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			PAINTSTRUCT ps;
 			HDC hdc = BeginPaint(hwnd, &ps);
 
-			drawEMF(hdc, hwnd, "background", 0, 0, 1, 1, true);
+			drawEMF(&hdc, hwnd, "background", 0, 0, 1, 1, true);
 
 			float deskWidthScale = 0.75*(screenWidth/2560);
 			float deskHeightScale = 1*(screenHeight/1440);
-			drawEMF(hdc, hwnd, "desk", screenWidth-(1026*deskWidthScale), screenHeight-(770*deskHeightScale), deskWidthScale, deskHeightScale, false); //1368x770 original res, 1026x770 scaled (top half-ish empty)
+			drawEMF(&hdc, hwnd, "desk", screenWidth-(1026*deskWidthScale), screenHeight-(770*deskHeightScale), deskWidthScale, deskHeightScale, false); //1368x770 original res, 1026x770 scaled (top half-ish empty)
 
+			/*
 			int trapezoidpos[2] = {0, 0};
 			POINT trapezoid[4] = {
 				{trapezoidpos[1]+50, trapezoidpos[2]},
@@ -136,6 +137,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			Polygon(hdc, trapezoid, 4);
 
 			Rectangle(hdc, 0, 0, 10, 10);
+			*/
 
 			HBRUSH brush = CreateSolidBrush(RGB(255, 253, 208));
 			HBRUSH oldBrush = SelectObject(hdc, brush);
@@ -147,7 +149,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpara
 			SetBkMode(hdc, TRANSPARENT);
 			TextOut(hdc, 510, 260, "Test", strlen("Test"));
 			
-			TextOut(hdc, 10, 110, "Hey!", strlen("Hey!"));
+			//TextOut(hdc, 10, 110, "Hey!", strlen("Hey!"));
 			EndPaint(hwnd, &ps);
 			return 0;
 		}
@@ -215,7 +217,7 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmdLine, int nCmdSh
 
 	if(!hwnd) return 0;
 
-	CreateButton(50, 50, 100, 30, hwnd, hInst, 1, "Click me!");
+	//CreateButton(50, 50, 100, 30, hwnd, hInst, 1, "Click me!");
 	CreateButton(screenWidth-100, screenHeight-30, 100, 30, hwnd, hInst, 2, "Exit");
 
 	HDC screen = GetDC(NULL);
@@ -223,12 +225,12 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmdLine, int nCmdSh
 	dpiY = GetDeviceCaps(screen, LOGPIXELSY);
 	ReleaseDC(NULL, screen);
 
-	HENHMETAFILE test = GetEnhMetaFileA("./assets/testdrawing.emf");
-	if (!test) {
+	HENHMETAFILE ext = GetEnhMetaFileA("./assets/exterior.emf");
+	if (!ext) {
 		MessageBox(hwnd, "Couldn't load test ENF!", "Error", MB_ICONERROR);
 		return 0;
 	}
-	insertEMF("background", test);
+	insertEMF("background", ext);
 	HENHMETAFILE desk = GetEnhMetaFileA("./assets/desk.emf");
 	if (!desk) {
 		MessageBox(hwnd, "Couldn't load test ENF!", "Error", MB_ICONERROR);
